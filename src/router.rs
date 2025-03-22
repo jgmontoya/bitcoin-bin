@@ -35,6 +35,61 @@ pub fn route_command(request: &CommandRequest) -> Result<i32, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
+    use std::path::PathBuf;
+
+    fn setup_test_path() -> (PathBuf, Option<String>) {
+        // Get the absolute path to the test helpers directory
+        let mut test_helpers_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        test_helpers_path.push("tests");
+        test_helpers_path.push("helpers");
+
+        // Store the original PATH
+        let original_path = env::var_os("PATH").map(|p| p.to_string_lossy().to_string());
+
+        // Add our helpers directory to the beginning of PATH
+        let path_separator = if cfg!(windows) { ";" } else { ":" };
+        let mut new_path = test_helpers_path.to_string_lossy().to_string();
+
+        if let Some(path) = env::var_os("PATH") {
+            new_path.push_str(path_separator);
+            new_path.push_str(&path.to_string_lossy());
+        }
+
+        // Set the new PATH
+        unsafe {
+            env::set_var("PATH", &new_path);
+        }
+
+        (test_helpers_path, original_path)
+    }
+
+    fn restore_path(original_path: Option<String>) {
+        unsafe {
+            if let Some(path) = original_path {
+                env::set_var("PATH", path);
+            } else {
+                env::remove_var("PATH");
+            }
+        }
+    }
+
+    struct TestPathGuard {
+        original_path: Option<String>,
+    }
+
+    impl TestPathGuard {
+        fn new() -> Self {
+            let (_, original_path) = setup_test_path();
+            Self { original_path }
+        }
+    }
+
+    impl Drop for TestPathGuard {
+        fn drop(&mut self) {
+            restore_path(self.original_path.take());
+        }
+    }
 
     #[test]
     fn test_map_subcommand() {
@@ -45,6 +100,7 @@ mod tests {
 
     #[test]
     fn test_route_command_not_found() {
+        let _guard = TestPathGuard::new();
         let request = CommandRequest {
             subcommand: "nonexistent".to_string(),
             args: vec![],
@@ -56,6 +112,7 @@ mod tests {
 
     #[test]
     fn test_route_command_cli() {
+        let _guard = TestPathGuard::new();
         let request = CommandRequest {
             subcommand: "cli".to_string(),
             args: vec!["--version".into()],
@@ -66,6 +123,7 @@ mod tests {
 
     #[test]
     fn test_route_command_daemon() {
+        let _guard = TestPathGuard::new();
         let request = CommandRequest {
             subcommand: "daemon".to_string(),
             args: vec!["--version".into()],
@@ -76,6 +134,7 @@ mod tests {
 
     #[test]
     fn test_route_command_with_multiple_args() {
+        let _guard = TestPathGuard::new();
         let request = CommandRequest {
             subcommand: "cli".to_string(),
             args: vec![
@@ -89,6 +148,7 @@ mod tests {
 
     #[test]
     fn test_route_command_with_double_dash() {
+        let _guard = TestPathGuard::new();
         let request = CommandRequest {
             subcommand: "cli".to_string(),
             args: vec!["--".into(), "-h".into()],

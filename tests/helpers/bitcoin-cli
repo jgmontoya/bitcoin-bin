@@ -1,0 +1,3 @@
+#!/bin/sh
+# Dummy bitcoin-cli that just returns success
+exit 0

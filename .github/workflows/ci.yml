@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: Check formatting
+            command: cargo fmt --all -- --check
+            components: rustfmt
+          - name: Clippy
+            command: cargo clippy -- -D warnings
+            components: clippy
+          - name: Run tests
+            command: cargo test --verbose
+            components: ""
+          - name: Build
+            command: cargo build --verbose
+            components: ""
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: ${{ matrix.components }}
+          profile: minimal
+          toolchain: stable
+          override: true
+          cache: "cargo"
+      - name: ${{ matrix.name }}
+        run: ${{ matrix.command }}

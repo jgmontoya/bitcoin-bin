@@ -1,5 +1,9 @@
 # Bitcoin Binary Router
 
+> **ARCHIVED**: This project has been archived. Bitcoin Core now natively implements this functionality with a unified `bitcoin` command that provides subcommands for gui, node, rpc, wallet, and tx. See [issue #2](https://github.com/jgmontoya/bitcoin-bin/issues/2) for details.
+
+---
+
 A unified command-line interface for Bitcoin Core tools. This project provides a single `bitcoin` command that routes subcommands to their respective Bitcoin Core binaries.
 
 ## Overview
